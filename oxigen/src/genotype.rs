@@ -3,12 +3,11 @@
 use rand::prelude::SmallRng;
 use std::iter::FromIterator;
 use std::slice::Iter;
-use std::vec::IntoIter;
 
 /// This trait defines an individual of a population in the genetic algorithm.
 /// It defines the fitness and mutation functions and the type of the
 /// individual representation.
-pub trait Genotype<T>: FromIterator<T> + Clone + Send + Sync {
+pub trait Genotype<T>: FromIterator<T> + IntoIterator<Item = T> + Clone + Send + Sync {
     /// The type that represents the problem size of the genotype. For example,
     /// in the N Queens problem the size of the `ProblemSize` is a numeric type
     /// (the number of queens).
@@ -16,9 +15,6 @@ pub trait Genotype<T>: FromIterator<T> + Clone + Send + Sync {
 
     /// Returns an iterator over the genes of the individual.
     fn iter(&self) -> Iter<T>;
-
-    /// Consumes the individual into an iterator over its genes.
-    fn into_iter(self) -> IntoIter<T>;
 
     /// Randomly initiailzes an individual.
     fn generate(instance: &Self::ProblemInstance) -> Self;
