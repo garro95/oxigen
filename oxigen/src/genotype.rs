@@ -13,7 +13,7 @@ pub trait Genotype<T>: FromIterator<T> + Display + Clone + Send + Sync {
     /// The type that represents the problem size of the genotype. For example,
     /// in the N Queens problem the size of the `ProblemSize` is a numeric type
     /// (the number of queens).
-    type ProblemSize: Default + Send + Sync;
+    type ProblemInstance: Send + Sync;
 
     /// Returns an iterator over the genes of the individual.
     fn iter(&self) -> Iter<T>;
@@ -22,7 +22,7 @@ pub trait Genotype<T>: FromIterator<T> + Display + Clone + Send + Sync {
     fn into_iter(self) -> IntoIter<T>;
 
     /// Randomly initiailzes an individual.
-    fn generate(size: &Self::ProblemSize) -> Self;
+    fn generate(instance: &Self::ProblemInstance) -> Self;
 
     /// Returns a fitness value for an individual.
     fn fitness(&self) -> f64;
