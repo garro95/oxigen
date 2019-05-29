@@ -61,14 +61,10 @@ const PROGRESS_HEADER: &[u8] = b"Generation\t\
     Fitness p75\t\
     Fitness p90\n";
 
-/// Struct that defines a genetic algorithm execution.
-pub struct GeneticExecution<T, Ind: Genotype<T>> {
+
+pub struct GeneticExecutionBuilder<T, Ind: Genotype<T>> {
     /// The number of individuals in the population.
     population_size: usize,
-    /// Population with all individuals and their respective fitnesses.
-    population: Vec<(Box<Ind>, Option<Fitness>)>,
-    /// Size of the genotype problem.
-    genotype_size: Ind::ProblemSize,
     /// The mutation rate variation along iterations and progress.
     mutation_rate: Box<MutationRate>,
     /// The number of stages in the cup whose individuals are selected to crossover.
@@ -84,7 +80,14 @@ pub struct GeneticExecution<T, Ind: Genotype<T>> {
     /// The stop criterion to finish execution.
     stop_criterion: Box<StopCriterion>,
     /// Cache fitness value of individuals or compute it in each iteration.
-    cache_fitness: bool,
+    cache_fitness: bool
+}
+
+/// Struct that defines a genetic algorithm execution.
+pub struct GeneticExecution<T, Ind: Genotype<T>> {
+    config: GeneticExecutionBuilder<T, Ind>,
+    /// Population with all individuals and their respective fitnesses.
+    population: Vec<(Box<Ind>, Option<Fitness>)>,
     /// Progress log, writes statistics of the population every certain number of generations.
     progress_log: (u64, Option<File>),
     /// Population log, writes the population and fitnesses every certain number of generations.
@@ -102,12 +105,11 @@ pub struct Fitness {
     original_fitness: f64,
 }
 
-impl<T, Ind: Genotype<T>> Default for GeneticExecution<T, Ind> {
+impl<T, Ind: Genotype<T>> Default for GeneticExecutionBuilder<T, Ind>
+{
     fn default() -> Self {
-        GeneticExecution {
+        GeneticExecutionBuilder {
             population_size: 64,
-            population: Vec::new(),
-            genotype_size: Ind::ProblemSize::default(),
             mutation_rate: Box::new(MutationRates::Constant(0.1)),
             selection_rate: Box::new(SelectionRates::Constant(2)),
             selection: Box::new(SelectionFunctions::Cup),
@@ -116,98 +118,112 @@ impl<T, Ind: Genotype<T>> Default for GeneticExecution<T, Ind> {
             survival_pressure: Box::new(SurvivalPressureFunctions::Worst),
             stop_criterion: Box::new(StopCriteria::SolutionFound),
             cache_fitness: true,
-            progress_log: (0, None),
-            population_log: (0, None),
         }
     }
 }
 
-impl<T, Ind: Genotype<T>> GeneticExecution<T, Ind> {
+impl<T, Ind: Genotype<T>> GeneticExecutionBuilder<T, Ind> {
     /// Creates a new default genetic algorithm execution.
     pub fn new() -> Self {
-        Self::default()
+       Self::default()
     }
 
     /// Sets the population size.
-    pub fn population_size(mut self, new_pop_size: usize) -> Self {
+    pub fn population_size(&mut self, new_pop_size: usize) -> &mut Self {
         self.population_size = new_pop_size;
         self
     }
 
-    /// Sets the initial population individuals. If lower individuals
-    /// than population_size are received, the rest of population will be
-    /// generated randomly.
-    pub fn population(mut self, new_pop: Vec<(Box<Ind>, Option<Fitness>)>) -> Self {
-        self.population = new_pop;
-        self
-    }
-
-    /// Sets the genotype size.
-    pub fn genotype_size(mut self, new_size: Ind::ProblemSize) -> Self {
-        self.genotype_size = new_size;
-        self
-    }
-
     /// Sets the mutation rate.
-    pub fn mutation_rate(mut self, new_mut: Box<MutationRate>) -> Self {
+    pub fn mutation_rate(&mut self, new_mut: Box<MutationRate>) -> &mut Self {
         self.mutation_rate = new_mut;
         self
     }
 
     /// Sets the number of tournament stages whose individuals are selected for crossover.
-    pub fn selection_rate(mut self, new_sel_rate: Box<SelectionRate>) -> Self {
+    pub fn selection_rate(&mut self, new_sel_rate: Box<SelectionRate>) -> &mut Self {
         self.selection_rate = new_sel_rate;
         self
     }
 
     /// Sets the selection function of the genetic algorithm.
-    pub fn select_function(mut self, new_sel: Box<Selection>) -> Self {
+    pub fn select_function(&mut self, new_sel: Box<Selection>) -> &mut Self {
         self.selection = new_sel;
         self
     }
 
     /// Sets the age function of the genetic algorithm.
-    pub fn age_function(mut self, new_age: Box<Age>) -> Self {
+    pub fn age_function(&mut self, new_age: Box<Age>) -> &mut Self {
         self.age = new_age;
         self
     }
 
     /// Sets the crossover function of the genetic algorithm.
-    pub fn crossover_function(mut self, new_cross: Box<Crossover<T, Ind>>) -> Self {
+    pub fn crossover_function(&mut self, new_cross: Box<Crossover<T, Ind>>) -> &mut Self {
         self.crossover = new_cross;
         self
     }
 
     /// Sets the survival pressure function of the genetic algorithm.
-    pub fn survival_pressure_function(mut self, new_surv: Box<SurvivalPressure<T, Ind>>) -> Self {
+    pub fn survival_pressure_function(&mut self, new_surv: Box<SurvivalPressure<T, Ind>>) -> &mut Self {
         self.survival_pressure = new_surv;
         self
     }
 
     /// Sets the stop criterion of the genetic algorithm.
-    pub fn stop_criterion(mut self, new_crit: Box<StopCriterion>) -> Self {
+    pub fn stop_criterion(&mut self, new_crit: Box<StopCriterion>) -> &mut Self {
         self.stop_criterion = new_crit;
         self
     }
 
     /// Sets the cache fitness flag.
-    pub fn cache_fitness(mut self, new_cache: bool) -> Self {
+    pub fn cache_fitness(&mut self, new_cache: bool) -> &mut Self {
         self.cache_fitness = new_cache;
         self
     }
+}
+
+impl<T, Ind: Genotype<T>> From<GeneticExecutionBuilder<T, Ind>> for GeneticExecution<T, Ind> {
+    fn from(builder: GeneticExecutionBuilder<T, Ind>) -> Self {
+        GeneticExecution{
+            config: builder,
+            population: Vec::new(),
+            progress_log: (0, None),
+            population_log: (0, None)
+        }
+    }
+}
+
+impl<T, Ind: Genotype<T>> GeneticExecution<T, Ind> {
+
+    /// Sets the initial population individuals. If lower individuals
+    /// than population_size are received, the rest of population will be
+    /// generated randomly.
+    pub fn set_population(&mut self, new_pop: Vec<(Box<Ind>, Option<Fitness>)>) {
+        self.population = new_pop;
+    }
+
+    pub fn population(&self) -> &Vec<(Box<Ind>, Option<Fitness>)> {
+        &self.population
+    }
 
     /// Sets the progress log.
-    pub fn progress_log(mut self, generations: u64, log_file: File) -> Self {
+    pub fn set_progress_log(&mut self, generations: u64, log_file: File) {
         self.progress_log = (generations, Some(log_file));
-        self
+    }
+
+    pub fn progress_log(&self) -> &(u64, Option<File>) {
+        &self.progress_log
     }
 
     /// Sets the progress log.
-    pub fn population_log(mut self, generations: u64, log_file: File) -> Self {
+    pub fn set_population_log(&mut self, generations: u64, log_file: File) {
         self.population_log = (generations, Some(log_file));
-        self
     }
-
+    
+    pub fn population_log(&self) -> &(u64, Option<File>) {
+        &self.population_log
+    }
     /// Run the genetic algorithm executiion until the `stop_criterion` is satisfied.
     ///
     /// # Returns
@@ -216,7 +232,7 @@ impl<T, Ind: Genotype<T>> GeneticExecution<T, Ind> {
     /// - The number of generations run.
     /// - The average progress in the last generations.
     /// - The entire population in the last generation (useful for resuming the execution).
-    pub fn run(mut self) -> (Vec<Box<Ind>>, u64, f64, Vec<(Box<Ind>, Option<Fitness>)>) {
+    pub fn run(mut self, problem_instance: Ind::ProblemInstance) -> (Vec<Box<Ind>>, u64, f64, Vec<(Box<Ind>, Option<Fitness>)>) {
         let mut generation: u64 = 0;
         let mut last_progresses: Vec<f64> = Vec::new();
         let mut progress: f64 = std::f64::NAN;
@@ -226,9 +242,9 @@ impl<T, Ind: Genotype<T>> GeneticExecution<T, Ind> {
         let mut last_best = 0f64;
 
         // Initialize randomly the population
-        while self.population.len() < self.population_size {
+        while self.population.len() < self.config.population_size {
             self.population
-                .push((Box::new(Ind::generate(&self.genotype_size)), None));
+                .push((Box::new(Ind::generate(&problem_instance)), None));
         }
         self.fix();
         let mut current_fitnesses = self.compute_fitnesses(true);
@@ -237,7 +253,7 @@ impl<T, Ind: Genotype<T>> GeneticExecution<T, Ind> {
             self.print_progress_header();
         }
 
-        while !self.stop_criterion.stop(
+        while !self.config.stop_criterion.stop(
             generation,
             progress,
             solutions.len() as u16,
@@ -245,13 +261,13 @@ impl<T, Ind: Genotype<T>> GeneticExecution<T, Ind> {
         ) {
             generation += 1;
 
-            mutation_rate = self.mutation_rate.rate(
+            mutation_rate = self.config.mutation_rate.rate(
                 generation,
                 progress,
                 solutions.len() as u16,
                 &current_fitnesses,
             );
-            selection_rate = self.selection_rate.rate(
+            selection_rate = self.config.selection_rate.rate(
                 generation,
                 progress,
                 solutions.len() as u16,
@@ -259,7 +275,7 @@ impl<T, Ind: Genotype<T>> GeneticExecution<T, Ind> {
             );
 
             current_fitnesses = self.compute_fitnesses(true);
-            let selected = self.selection.select(&current_fitnesses, selection_rate);
+            let selected = self.config.selection.select(&current_fitnesses, selection_rate);
             self.cross(&selected);
             self.mutate(mutation_rate);
             self.fix();
@@ -419,8 +435,8 @@ impl<T, Ind: Genotype<T>> GeneticExecution<T, Ind> {
     }
 
     fn compute_fitnesses(&mut self, refresh_on_nocache: bool) -> Vec<f64> {
-        let age_function = &self.age;
-        if self.cache_fitness || !refresh_on_nocache {
+        let age_function = &self.config.age;
+        if self.config.cache_fitness || !refresh_on_nocache {
             self.population
                 .par_iter_mut()
                 .filter(|ind| ind.1.is_none())
@@ -512,7 +528,7 @@ impl<T, Ind: Genotype<T>> GeneticExecution<T, Ind> {
             if ind2 >= selected.len() {
                 ind2 = SmallRng::from_entropy().sample(Uniform::from(0..selected.len()));
             }
-            let (crossed1, crossed2) = self.crossover.cross(
+            let (crossed1, crossed2) = self.config.crossover.cross(
                 &self.population[selected[ind1]].0,
                 &self.population[selected[ind2]].0,
             );
@@ -538,9 +554,9 @@ impl<T, Ind: Genotype<T>> GeneticExecution<T, Ind> {
     }
 
     fn survival_pressure_kill(&mut self) {
-        for killed in self
+        for killed in self.config
             .survival_pressure
-            .kill(self.population_size, &self.population)
+            .kill(self.config.population_size, &self.population)
         {
             self.population.remove(killed);
         }
