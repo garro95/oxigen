@@ -1,7 +1,6 @@
 //! This module contains the definition of genotypes.
 
 use rand::prelude::SmallRng;
-use std::fmt::Display;
 use std::iter::FromIterator;
 use std::slice::Iter;
 use std::vec::IntoIter;
@@ -9,7 +8,7 @@ use std::vec::IntoIter;
 /// This trait defines an individual of a population in the genetic algorithm.
 /// It defines the fitness and mutation functions and the type of the
 /// individual representation.
-pub trait Genotype<T>: FromIterator<T> + Display + Clone + Send + Sync {
+pub trait Genotype<T>: FromIterator<T> + Clone + Send + Sync {
     /// The type that represents the problem size of the genotype. For example,
     /// in the N Queens problem the size of the `ProblemSize` is a numeric type
     /// (the number of queens).

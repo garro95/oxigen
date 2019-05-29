@@ -292,9 +292,6 @@ impl<T, Ind: Genotype<T>> GeneticExecution<T, Ind> {
             if self.progress_log.0 > 0 && generation % self.progress_log.0 == 0 {
                 self.print_progress(generation, progress, &last_progresses, solutions.len());
             }
-            if self.population_log.0 > 0 && generation % self.population_log.0 == 0 {
-                self.print_population(generation);
-            }
 
             self.update_age();
         }
@@ -304,29 +301,6 @@ impl<T, Ind: Genotype<T>> GeneticExecution<T, Ind> {
             final_solutions.push(self.population[i].0.clone());
         }
         (final_solutions, generation, progress, self.population)
-    }
-
-    fn print_population(&mut self, generation: u64) {
-        if let Some(ref mut f) = self.population_log.1 {
-            f.write_all(format!("Generation {}\n", generation).as_bytes())
-                .expect(POPULATION_ERR_MSG);
-            for (i, ind) in self.population.iter().enumerate() {
-                f.write_all(
-                    format!(
-                        "Individual: {}; fitness: {}, age: {}, original_fitness: {}\n",
-                        i,
-                        ind.1.unwrap().fitness,
-                        ind.1.unwrap().age,
-                        ind.1.unwrap().original_fitness
-                    )
-                    .as_bytes(),
-                )
-                .expect(POPULATION_ERR_MSG);
-                f.write_all(format!("{}\n\n", ind.0).as_bytes())
-                    .expect(POPULATION_ERR_MSG);
-            }
-            f.write_all(POPULATION_SEPARATOR).expect(POPULATION_ERR_MSG);
-        }
     }
 
     fn print_progress_header(&mut self) {
@@ -570,5 +544,33 @@ impl<T, Ind: Genotype<T>> GeneticExecution<T, Ind> {
                 .partial_cmp(&el1.1.unwrap().fitness)
                 .unwrap()
         });
+    }
+}
+
+impl<T, Ind> GeneticExecution<T, Ind>
+where Ind: std::fmt::Display +
+    Genotype<T>
+{
+    pub fn print_population(&mut self, generation: u64) {
+        if let Some(ref mut f) = self.population_log.1 {
+            f.write_all(format!("Generation {}\n", generation).as_bytes())
+                .expect(POPULATION_ERR_MSG);
+            for (i, ind) in self.population.iter().enumerate() {
+                f.write_all(
+                    format!(
+                        "Individual: {}; fitness: {}, age: {}, original_fitness: {}\n",
+                        i,
+                        ind.1.unwrap().fitness,
+                        ind.1.unwrap().age,
+                        ind.1.unwrap().original_fitness
+                    )
+                    .as_bytes(),
+                )
+                .expect(POPULATION_ERR_MSG);
+                f.write_all(format!("{}\n\n", ind.0).as_bytes())
+                    .expect(POPULATION_ERR_MSG);
+            }
+            f.write_all(POPULATION_SEPARATOR).expect(POPULATION_ERR_MSG);
+        }
     }
 }
