@@ -1,7 +1,10 @@
-# oxigen
+# oxigen (Fork)
 
 [![Build Status](https://travis-ci.com/Martin1887/oxigen.svg?branch=master)](https://travis-ci.com/Martin1887/oxigen)
 [![Current Crates.io Version](https://img.shields.io/crates/v/oxigen.svg)](https://crates.io/crates/oxigen)
+
+This is a fork of the oxigen crate. The link is to the original crate.
+This fork is released under a different but compatible license.
 
 Oxigen is a parallel genetic algorithm library implemented in Rust. The name comes from the merge of `OXI`dación (Rust translated to Spanish) and `GEN`etic.
 
@@ -213,12 +216,8 @@ code you contribute must be:
 
 Note that unless you
 explicitly state otherwise, any contribution intentionally submitted for
-inclusion in oxigen by you shall be dual licensed under the MIT License and
-Apache License, Version 2.0, without any additional terms or conditions.
-
+inclusion in this fork of oxigen by you shall be licensed under a license compatible with the
+GNU GPL version 3 or later.
 ## License
 
-oxigen is licensed under either of the following, at your option:
-
- * Apache License, Version 2.0, ([LICENSE-APACHE](LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
- * MIT License ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
+This fork of oxigen is released under the GNU GPL version 3 or, at your opinion, any later version.
