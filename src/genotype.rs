@@ -20,16 +20,16 @@ pub trait Genotype<T>: FromIterator<T> + IntoIterator<Item = T> + Clone + Send +
     fn generate(instance: &Self::ProblemInstance) -> Self;
 
     /// Returns a fitness value for an individual.
-    fn fitness(&self) -> f64;
+    fn fitness(&self, instance: &Self::ProblemInstance) -> f64;
 
     /// Defines the manner in which an individual is mutated when
     /// an elemennt of the individual is selected to mutate.
-    fn mutate(&mut self, rgen: &mut SmallRng, index: usize);
+    fn mutate(&mut self, rgen: &mut SmallRng, index: usize, instance: &Self::ProblemInstance);
 
     /// Defines if an individual is a valid solution to the problem.
-    fn is_solution(&self, fitness: f64) -> bool;
+    fn is_solution(&self, fitness: f64, instance: &Self::ProblemInstance) -> bool;
 
     /// Fix the individual to satisfy the problem restrictions. The default
     /// implementation is to remain the individual unmodified always.
-    fn fix(&mut self) {}
+    fn fix(&mut self, instance: &Self::ProblemInstance) {}
 }

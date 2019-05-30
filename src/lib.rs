@@ -92,6 +92,10 @@ pub struct GeneticExecution<T, Ind: Genotype<T>> {
     progress_log: (u64, Option<File>),
     /// Population log, writes the population and fitnesses every certain number of generations.
     population_log: (u64, Option<File>),
+    /// The instance of the problem to be solved.
+    /// It should contain all the side information needed to operate on the Genotype.
+    /// The value will be available to almost all the functions of the Genotype trait.
+    problem_instance: Option<Ind::ProblemInstance>,
 }
 
 /// Struct that defines the fitness of each individual and the related information.
@@ -189,7 +193,8 @@ impl<T, Ind: Genotype<T>> From<GeneticExecutionBuilder<T, Ind>> for GeneticExecu
             config: builder,
             population: Vec::new(),
             progress_log: (0, None),
-            population_log: (0, None)
+            population_log: (0, None),
+            problem_instance: None
         }
     }
 }
@@ -240,11 +245,12 @@ impl<T, Ind: Genotype<T>> GeneticExecution<T, Ind> {
         let mut mutation_rate;
         let mut selection_rate;
         let mut last_best = 0f64;
+        self.problem_instance = Some(problem_instance);
 
         // Initialize randomly the population
         while self.population.len() < self.config.population_size {
             self.population
-                .push((Box::new(Ind::generate(&problem_instance)), None));
+                .push((Box::new(Ind::generate(&self.problem_instance.as_ref().unwrap())), None));
         }
         self.fix();
         let mut current_fitnesses = self.compute_fitnesses(true);
@@ -387,8 +393,9 @@ impl<T, Ind: Genotype<T>> GeneticExecution<T, Ind> {
     }
 
     fn fix(&mut self) {
+        let problem_instance_ref = self.problem_instance.as_ref().unwrap();
         self.population.par_iter_mut().for_each(|ind| {
-            ind.0.fix();
+            ind.0.fix(problem_instance_ref);
         });
     }
 
@@ -410,12 +417,13 @@ impl<T, Ind: Genotype<T>> GeneticExecution<T, Ind> {
 
     fn compute_fitnesses(&mut self, refresh_on_nocache: bool) -> Vec<f64> {
         let age_function = &self.config.age;
+        let problem_instance_ref = &self.problem_instance.as_ref().unwrap();
         if self.config.cache_fitness || !refresh_on_nocache {
             self.population
                 .par_iter_mut()
                 .filter(|ind| ind.1.is_none())
                 .for_each(|ind| {
-                    let new_fit_value = ind.0.fitness();
+                    let new_fit_value = ind.0.fitness(problem_instance_ref);
                     ind.1 = Some(Fitness {
                         age: 0,
                         fitness: new_fit_value,
@@ -438,8 +446,9 @@ impl<T, Ind: Genotype<T>> GeneticExecution<T, Ind> {
                     }
                 });
         } else {
+            let problem_instance_ref = self.problem_instance.as_ref().unwrap();
             self.population.par_iter_mut().for_each(|ind| {
-                let mut new_fit_value = ind.0.fitness();
+                let mut new_fit_value = ind.0.fitness(problem_instance_ref);
                 match ind.1 {
                     Some(fit) => {
                         let age_exceed: i64 = fit.age as i64 - age_function.age_threshold() as i64;
@@ -470,12 +479,13 @@ impl<T, Ind: Genotype<T>> GeneticExecution<T, Ind> {
     fn get_solutions(&self) -> Vec<usize> {
         let mut solutions = Vec::new();
         let (sender, receiver) = channel();
+        let problem_instance_ref = self.problem_instance.as_ref().unwrap();
 
         self.population
             .par_iter()
             .enumerate()
             .for_each_with(sender, |s, (i, ind)| {
-                if ind.0.is_solution(ind.1.unwrap().original_fitness) {
+                if ind.0.is_solution(ind.1.unwrap().original_fitness, problem_instance_ref) {
                     s.send(i).unwrap();
                 }
             });
@@ -515,12 +525,13 @@ impl<T, Ind: Genotype<T>> GeneticExecution<T, Ind> {
     }
 
     fn mutate(&mut self, mutation_rate: f64) {
+        let problem_instance_ref = self.problem_instance.as_ref().unwrap();
         self.population.par_iter_mut().for_each(|individual| {
             let mut rgen = SmallRng::from_entropy();
             for gen in 0..individual.0.iter().len() {
                 let random: f64 = rgen.sample(Standard);
                 if random < mutation_rate {
-                    individual.0.mutate(&mut rgen, gen);
+                    individual.0.mutate(&mut rgen, gen, problem_instance_ref);
                     individual.1 = None;
                 }
             }
