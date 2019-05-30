@@ -11,5 +11,5 @@ categories = ["algorithms", "science"]
 
 [dependencies]
 historian = "3.0"
-rand = "0.5"
+rand = "0.6"
 rayon = "1.0"
